@@ -31,6 +31,12 @@ def db_test():
     return {"status": "OK", 
             "message": "Test de connexion à la base de données réussie.",
             "version" : version}
+    
+@app.get("/load-csv")
+def load_csv():
+    from src.load_csv import load_csv_to_db
+    result = load_csv_to_db()
+    return result 
 
 if __name__ == "__main__":
     import uvicorn
