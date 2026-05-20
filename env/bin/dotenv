@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/jimmy/OPenClassRooms/AI ENGINEER/PROJET_5_IA_ENGINEER/env/bin/python3" "$0" "$@"
+'''exec' "/home/jcwad/Ingenieur IA/Projet 5/env/bin/python3" "$0" "$@"
 ' '''
 import sys
 from dotenv.__main__ import cli
