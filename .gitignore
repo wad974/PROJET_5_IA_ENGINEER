@@ -1,1 +1,3 @@
 FICHIER GITIGNORE
+env
+.gitignore
