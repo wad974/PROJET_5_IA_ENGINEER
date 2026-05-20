@@ -9,14 +9,29 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-app = FastAPI()
+from src.database import test_db_connection
 
+app = FastAPI(
+    title="Projet 5 IA Engineer",
+    description="API pour le projet 5 de l'IA Engineer",
+    version="0.0.1",
+)
 
 @app.get("/")
-def read_root():
-    return {"Hello": "World"}
+def page_racine():
+    return {"message": "Bienvenue sur l'API du projet 5 de l'IA Engineer!"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "OK", "message": "L'API est opérationnelle."}
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+@app.get("/db-test")
+def db_test():
+    version = test_db_connection()
+    return {"status": "OK", 
+            "message": "Test de connexion à la base de données réussie.",
+            "version" : version}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
