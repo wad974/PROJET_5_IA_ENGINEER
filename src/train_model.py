@@ -48,4 +48,7 @@ def split_data(df_central):
 
     grid.fit(X_train_scaler, y_train)
     model = grid.best_estimator_
-    model.score(X_test, y_test)
+    score = model.score(X_test_scaler, y_test)
+    print(f'Modèle entrainé avec succès. Score sur le test set : {score:.4f}')
+    
+    return model, scaler, score
