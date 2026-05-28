@@ -52,7 +52,7 @@ def analyse_data():
     df_central = df_central.dropna()   
     
     # on vois deux colonnes avec des data NaN on vas directement supprimer ces colonnes 
-    df_corr = df_corr.drop(columns=['nombre_employee_sous_responsabilite', 'nombre_heures_travailless'], axis=1)
+    df_corr = df_central.drop(columns=['nombre_employee_sous_responsabilite', 'nombre_heures_travailless'], axis=1)
     
     return df_corr
 
