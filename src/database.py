@@ -13,7 +13,14 @@ DB_NAME = config.get('database', 'name')
 DB_USER = config.get('database', 'user')
 DB_PASSWORD = config.get('database', 'password')
 
-# Connexion à la base de données
+# connexion a la base de données avec SQLAlchemy
+from sqlalchemy import create_engine
+def create_db_engine():
+    url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    engine = create_engine(url)
+    return engine
+
+# Connexion à la base de données avec psycopg
 def connect_to_db():
     try:
         connection = psycopg.connect(
