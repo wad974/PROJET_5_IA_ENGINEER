@@ -1,3 +1,15 @@
+---
+title: API Prediction Attrition
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+sdk_version: "latest"
+python_version: "3.13"
+app_file: app.py
+pinned: false
+---
+
 # 🚀 Projet 5 : API de Prédiction d'Attrition des Employés — AI Engineer
 
 Ce dépôt héberge l'architecture complète d'une API REST développée avec **FastAPI**. L'objectif principal du projet est de centraliser, nettoyer et consolider les données provenant de plusieurs systèmes d'information (RH, Évaluations et Sondages) afin d'entraîner un modèle de Machine Learning capable de prédire l'attrition des employés (risque de démission) et d'exposer ces prédictions via un endpoint de prédiction unitaire.
