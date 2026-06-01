@@ -6,7 +6,14 @@ import pandas as pd
 
 def get_data_from_db():
     engine = create_db_engine()
-    query = "SELECT * FROM data_centrale"
+    query = """
+        select * 
+        from public.sirh s
+        left join public.eval e 
+        on cast(replace(e.eval_number, 'E_', '') as integer) = s.id_employee 
+        left join public.sondage so
+        on so.code_sondage  = s.id_employee;
+    """
     df_central = pd.read_sql_query(query, engine)
     print("Données récupérées depuis la base de données :")
     print(df_central.shape[0], "lignes", df_central.shape[1], "colonnes")
