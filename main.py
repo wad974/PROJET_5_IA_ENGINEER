@@ -1,18 +1,19 @@
-from fastapi import FastAPI, UploadFile, HTTPException, File
 import os
 import shutil
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from scipy.stats import norm
-from sklearn.preprocessing import StandardScaler
-from scipy import stats
 import warnings
+import numpy as np
+import pandas as pd
+from fastapi import FastAPI, UploadFile, HTTPException, File
+
+# On désactive les warnings inutiles
 warnings.filterwarnings('ignore')
 
+# Imports de vos modules locaux
 from src.database import test_db_connection
+from src.data_fetch import get_data_from_db
+from model.EmployeeInput import EmployeeInput
 
+# Initialisation de l'application FastAPI
 app = FastAPI(
     title="Projet 5 IA Engineer",
     description="API pour le projet 5 de l'IA Engineer",
@@ -25,31 +26,41 @@ app = FastAPI(
 trained_model = None
 trained_scaler = None
 
-@app.get("/")
+# Chemin vers le dossier de stockage des fichiers
+UPLOAD_FOLDER = "data"
+
+# ------------------------------------------------------------------
+# ENDPOINTS DE DIAGNOSTIC ET BASE DE DONNÉES
+# ------------------------------------------------------------------
+
+@app.get("/", summary="Page d'accueil de l'API")
 def page_racine():
     return {"message": "Bienvenue sur l'API du projet 5 de l'IA Engineer!"}
 
-@app.get("/health")
+
+@app.get("/health", summary="Vérification de l'état de l'API")
 def health_check():
     return {"status": "OK", "message": "L'API est opérationnelle."}
 
-@app.get("/db-test")
+
+@app.get("/db-test", summary="Test de connexion à la base de données")
 def db_test():
     version = test_db_connection()
-    return {"status": "OK", 
-            "message": "Test de connexion à la base de données réussie.",
-            "version" : version}
-    
-@app.get("/load-csv")
+    return {
+        "status": "OK", 
+        "message": "Test de connexion à la base de données réussie.",
+        "version": version
+    }
+
+
+@app.get("/load-csv", summary="Charge les fichiers CSV initiaux dans la base de données")
 def load_csv():
     from src.load_csv import load_csv_to_db
     result = load_csv_to_db()
     return result 
 
-# chemin vers le dossier data
-UPLOAD_FOLDER = "data"
 
-@app.post("/upload-csv")
+@app.post("/upload-csv", summary="Télécharge un nouveau fichier CSV")
 async def upload_csv(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Le fichier doit être au format CSV.")
@@ -57,7 +68,6 @@ async def upload_csv(file: UploadFile = File(...)):
     file_location = os.path.join(UPLOAD_FOLDER, file.filename)
     
     try:
-    
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
@@ -67,38 +77,36 @@ async def upload_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Erreur lors du téléchargement du fichier: {e}")
 
 
-"""
-Lancer le traitement et obtenier les predictions du modèle entrainé :
-"""
+# ------------------------------------------------------------------
+# ENDPOINTS MACHINE LEARNING (TRAIN & PREDICT)
+# ------------------------------------------------------------------
 
-@app.post("/train-model", summary="Entraîne le modèle et retourne les prédictions")
+@app.post("/train-model", summary="Entraîne le modèle et stocke les artifacts")
 def train_model():
-    
     global trained_model, trained_scaler
     try:
-        from src import train_model, data_fetch
+        from src import train_model as ml_pipeline
         
-        # on recupere les données depuis la base de données et on les split pour entrainer le modèle
-        model, scaler, score = train_model.split_data(data_fetch.get_data_from_db())
+        # Récupération des données consolidées et entraînement du pipeline
+        model, scaler, score = ml_pipeline.split_data(get_data_from_db())
+        
+        # Stockage dans les variables globales pour les requêtes de prédiction ultérieures
         trained_model = model
         trained_scaler = scaler
-        # on retourne le score du modèle sur le test set
+        
         return {
             "status": "Success",
             "metric_score_f1": round(score, 4),
             "message": "Le pipeline s'est exécuté avec succès sur les dernières données de la base."
         }
         
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'entraînement du modèle: {e}")
 
-# on importe le schéma de validation Pydantic pour la prédiction d'un employé spécifique
-from model.EmployeeInput import EmployeeInput
 
-@app.post("/predict", summary="Prédire si un employé spécifique va partir")
-def predict_single_employee(employee: EmployeeInput):
-    # On vérifie si le modèle a bien été entraîné au moins une fois via /train-model
+@app.post("/predict", summary="Prédire si un employé spécifique va partir à partir de son ID")
+def predict_single_employee(id_employee: int):
+    # 1. Vérification de la présence du modèle et du scaler
     if trained_model is None or trained_scaler is None:
         raise HTTPException(
             status_code=503, 
@@ -106,30 +114,57 @@ def predict_single_employee(employee: EmployeeInput):
         )
     
     try:
-        # On convertit les données validées par Pydantic en DataFrame
-        data_dict = employee.model_dump()
-        df = pd.DataFrame([data_dict])
+        # 2. Récupération de l'ensemble des données consolidées de la DB
+        df_all = get_data_from_db()
         
-        # ⚠️ Pour éviter le Data Leakage comme dans train_model.py,
-        # on retire la colonne cible si elle est créée par défaut (ici elle n'y est pas)
-        # Mais on doit s'assurer que l'ordre correspond EXACTEMENT au X_train
-        X_features = df[['id_employe', 'age', 'salaire', 'nombre_employee_sous_responsabilite', 'nombre_heures_travailless']]
+        # 3. Extraction de la ligne correspondant à l'ID fourni
+        df_employee = df_all[df_all['id_employee'] == id_employee]
         
-        # Application du scaler entraîné
+        if df_employee.empty:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"L'employé avec l'ID {id_employee} n'a pas été trouvé dans la base de données."
+            )
+            
+        # 4. Validation structurelle via le modèle Pydantic EmployeeInput
+        employee_dict = df_employee.iloc[0].to_dict()
+        validated_employee = EmployeeInput(**employee_dict)
+        
+        # 5. Reconstruction d'un DataFrame propre
+        df_features = pd.DataFrame([validated_employee.model_dump()])
+        
+        # 6. Alignement strict de l'ordre des features (Exclusion de l'ID et de la Target)
+        X_features = df_features[[
+            'age', 'genre', 'revenu_mensuel', 'statut_marital', 'departement', 'poste', 
+            'nombre_experiences_precedentes', 'nombre_heures_travailless', 'annee_experience_totale', 
+            'annees_dans_l_entreprise', 'annees_dans_le_poste_actuel', 'nombre_participation_pee', 
+            'nb_formations_suivies', 'nombre_employee_sous_responsabilite', 'code_sondage', 
+            'distance_domicile_travail', 'niveau_education', 'domaine_etude', 'ayant_enfants', 
+            'frequence_deplacement', 'annees_depuis_la_derniere_promotion', 'annes_sous_responsable_actuel',
+            'satisfaction_employee_environnement', 'note_evaluation_precedente', 'niveau_hierarchique_poste', 
+            'satisfaction_employee_nature_travail', 'satisfaction_employee_equipe', 
+            'satisfaction_employee_equilibre_pro_perso', 'eval_number', 'note_evaluation_actuelle', 
+            'heure_supplementaires', 'augementation_salaire_precedente'
+        ]]
+        
+        # 7. Standardisation des données
         X_scaled = trained_scaler.transform(X_features)
         
-        # Prédiction
+        # 8. Calcul de la prédiction
         prediction = int(trained_model.predict(X_scaled)[0])
         
         return {
             "status": "Success",
-            "id_employe": employee.id_employe,
+            "id_employee": id_employee,
             "prediction": prediction,
             "prediction_text": "L'employé va quitter l'entreprise" if prediction == 1 else "L'employé va rester"
         }
         
+    except HTTPException as http_err:
+        raise http_err
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction : {e}")
+
 
 if __name__ == "__main__":
     import uvicorn
