@@ -1,8 +1,9 @@
 #!/bin/sh
-'''exec' "/home/jimmy/OPenClassRooms/AI ENGINEER/PROJET_5_IA_ENGINEER/env/bin/python3" "$0" "$@"
+'''exec' "/home/jcwad/Ingenieur IA/Projet 5/env/bin/python3" "$0" "$@"
 ' '''
 import sys
 from fontTools.__main__ import main
 if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
     sys.exit(main())
