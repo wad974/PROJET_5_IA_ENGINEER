@@ -3,7 +3,7 @@ import shutil
 import warnings
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, UploadFile, HTTPException, File
+from fastapi import FastAPI, UploadFile, HTTPException, File, Request
 
 # On désactive les warnings inutiles
 warnings.filterwarnings('ignore')
@@ -33,9 +33,56 @@ UPLOAD_FOLDER = "data"
 # ENDPOINTS DE DIAGNOSTIC ET BASE DE DONNÉES
 # ------------------------------------------------------------------
 
-@app.get("/", summary="Page d'accueil de l'API")
-def page_racine():
-    return {"message": "Bienvenue sur l'API du projet 5 de l'IA Engineer!"}
+@app.get("/", summary="Page d'accueil et catalogue des endpoints")
+def page_racine(request: Request):
+    # On récupère la base_url de manière dynamique (ex: http://localhost:7860/ ou http://votre-serveur/)
+    base_url = str(request.base_url).rstrip("/")
+    
+    return {
+        "message": "Bienvenue sur l'API du projet 5 de l'IA Engineer!",
+        "documentation": {
+            "swagger_ui": f"{base_url}/docs",
+            "redoc": f"{base_url}/redoc"
+        },
+        "endpoints": {
+            "diagnostic": {
+                "health_check": {
+                    "url": f"{base_url}/health",
+                    "method": "GET",
+                    "description": "Vérifier si l'API est opérationnelle."
+                },
+                "db_test": {
+                    "url": f"{base_url}/db-test",
+                    "method": "GET",
+                    "description": "Tester la connexion à la base de données PostgreSQL."
+                }
+            },
+            "data_management": {
+                "load_csv": {
+                    "url": f"{base_url}/load-csv",
+                    "method": "GET",
+                    "description": "Charger les fichiers CSV initiaux dans la base de données."
+                },
+                "upload_csv": {
+                    "url": f"{base_url}/upload-csv",
+                    "method": "POST",
+                    "description": "Télécharger un fichier CSV dans le dossier data (nécessite un fichier multipart)."
+                }
+            },
+            "machine_learning": {
+                "train_model": {
+                    "url": f"{base_url}/train-model",
+                    "method": "POST",
+                    "description": "Entraîner le modèle sur les données de la DB et calculer le score F1."
+                },
+                "predict": {
+                    "url": f"{base_url}/predict?id_employee={{id_employee}}",
+                    "method": "POST",
+                    "description": "Prédire le départ d'un employé. Remplacer {id_employee} par l'identifiant cible."
+                }
+            }
+        }
+    }
 
 
 @app.get("/health", summary="Vérification de l'état de l'API")
