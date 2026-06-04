@@ -9,11 +9,18 @@ import pandas as pd
 
 def split_data(df_central):
     
+    print('[INFO] Début de la séparation des données en X et y...')
+    print('[INFO] df_central shape :', df_central.shape)
+    print('[INFO] Colonnes disponibles :', df_central.columns.tolist())
+    print('[INFO] Aperçu des premières lignes de df_central :\n', df_central.head())
     X = df_central.copy()
+    print('[INFO] X shape avant suppression de la target :', X.shape)
     # on supprime la target dans la features pour eviter le data Leakage
     X = X.drop(columns=['a_quitte_l_entreprise_Oui'])
+    print('[INFO] X shape après suppression de la target :', X.shape)
     # on recupere le target
     y = df_central['a_quitte_l_entreprise_Oui']
+    print('[INFO] y shape :', y.shape)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=5) # 20 pourcent  de train test
     print('Train set : ', X_train.shape)
@@ -28,11 +35,13 @@ def split_data(df_central):
     X_train_scaler = scaler.fit_transform(X_train) # on fit_transformes les données sur X_train 
     X_test_scaler = scaler.transform(X_test) # on transformes les données sur X_test
 
-    
+    print('[INFO] Début de l\'entraînement du modèle avec GridSearchCV...')
     param_grid = {
         'max_depth': [3, 5, 10, 15, 20, None],
         'n_estimators': [50, 100, 200]
     }
+    
+    print('[INFO] Paramètres de GridSearchCV :', param_grid)
     grid = GridSearchCV(
         RandomForestClassifier(random_state=42),
         param_grid=param_grid,
@@ -46,6 +55,8 @@ def split_data(df_central):
         n_jobs=-1
     )
 
+    print('[INFO] Début de l\'ajustement des hyperparamètres...')
+    print('[INFO] Entraînement en cours, cela peut prendre quelques instants...')
     grid.fit(X_train_scaler, y_train)
     model = grid.best_estimator_
     score = model.score(X_test_scaler, y_test)
