@@ -132,11 +132,15 @@ async def upload_csv(file: UploadFile = File(...)):
 def train_model():
     global trained_model, trained_scaler
     try:
-        from src import train_model as ml_pipeline
+        from src import train_model, load_csv, data_fetch
         
+        print('[INFO] Démarrage de l\'entraînement du modèle...')
         # Récupération des données consolidées et entraînement du pipeline
-        model, scaler, score = ml_pipeline.split_data(get_data_from_db())
+        model, scaler, score = train_model.split_data(load_csv.analyse_data())
         
+        print('Score F1 du modèle entraîné :', round(score, 4))
+        print('Model du modèle entraîné :', model)
+        print('Scaler du modèle entraîné :', scaler)
         # Stockage dans les variables globales pour les requêtes de prédiction ultérieures
         trained_model = model
         trained_scaler = scaler
