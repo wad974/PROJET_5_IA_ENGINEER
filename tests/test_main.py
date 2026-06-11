@@ -80,7 +80,8 @@ def test_train_model(mock_split_data, mock_get_data):
     mock_model = MagicMock()
     mock_scaler = MagicMock()
     mock_score = 0.85678
-    mock_split_data.return_value = (mock_model, mock_scaler, mock_score)
+    mock_x_train_scaled = np.array([[1, 2], [3, 4]])
+    mock_split_data.return_value = (mock_model, mock_scaler, mock_score, mock_x_train_scaled) 
 
     response = client.post("/train-model")
     assert response.status_code == 200

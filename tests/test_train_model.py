@@ -16,9 +16,14 @@ def test_train_model():
     }
     df_fictif = pd.DataFrame(data)
     
-    model, scaler, score = train_model.split_data(df_fictif)
+    model, scaler, score, x_train_scaled = train_model.split_data(df_fictif)
     
     assert model is not None
     assert scaler is not None
     assert isinstance(score, float)
     assert 0 <= score <= 1
+    
+    assert x_train_scaled is not None
+    assert x_train_scaled.shape[0] > 0  # Vérifie que x_train_scaled n'est pas vide
+    assert hasattr(model, 'predict')     # Vérifie que model a une méthode predict
+    assert hasattr(scaler, 'transform')  # Vérifie que scaler a une méthode transform
