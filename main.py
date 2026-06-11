@@ -174,7 +174,8 @@ def predict_single_employee(id_employee: int ):
     try:
         
         # 2. Récupération des données de l'employé spécifique
-        employee_data = get_data_from_db(id_employee=id_employee)
+        employee_data = get_data_from_db()
+        employee_data = employee_data[employee_data['id_employee'] == id_employee]
 
         # 3. Vérification de l'existence de l'employé
         if employee_data.empty:
