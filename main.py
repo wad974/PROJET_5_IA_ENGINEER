@@ -140,8 +140,8 @@ def train_model():
         
         print('[INFO] Démarrage de l\'entraînement du modèle...')
         # Récupération des données consolidées et entraînement du pipeline
-        model, scaler, score, x_train_scaled = train_model.split_data(get_data_from_db())
-        #model, scaler, score, x_train_scaled = train_model.split_data(load_csv.analyse_data())
+        #model, scaler, score, x_train_scaled = train_model.split_data(get_data_from_db())
+        model, scaler, score, x_train_scaled = train_model.split_data(load_csv.analyse_data())
         
         print('Score F1 du modèle entraîné :', round(score, 4))
         print('Model du modèle entraîné :', model)
