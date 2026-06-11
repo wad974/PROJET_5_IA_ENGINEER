@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, UploadFile, HTTPException, File, Request
 
+
 # On désactive les warnings inutiles
 warnings.filterwarnings('ignore')
 
@@ -12,6 +13,7 @@ warnings.filterwarnings('ignore')
 from src.database import test_db_connection
 from src.data_fetch import get_data_from_db
 from model.EmployeeInput import EmployeeInput
+
 
 # Initialisation de l'application FastAPI
 app = FastAPI(
@@ -138,7 +140,8 @@ def train_model():
         
         print('[INFO] Démarrage de l\'entraînement du modèle...')
         # Récupération des données consolidées et entraînement du pipeline
-        model, scaler, score, x_train_scaled = train_model.split_data(load_csv.analyse_data())
+        model, scaler, score, x_train_scaled = train_model.split_data(get_data_from_db())
+        #model, scaler, score, x_train_scaled = train_model.split_data(load_csv.analyse_data())
         
         print('Score F1 du modèle entraîné :', round(score, 4))
         print('Model du modèle entraîné :', model)
@@ -172,9 +175,11 @@ def predict_single_employee(id_employee: int ):
         )
     
     try:
+        from src import train_model, load_csv, data_fetch
         
         # 2. Récupération des données de l'employé spécifique
-        employee_data = get_data_from_db()
+        #employee_data = get_data_from_db()
+        employee_data = load_csv.analyse_data()
         employee_data = employee_data[employee_data['id_employee'] == id_employee]
 
         # 3. Vérification de l'existence de l'employé

@@ -114,7 +114,8 @@ def test_predict_success(mock_get_data):
     assert response.json()["prediction"] == 1
 
 # 5. Test de l'erreur 404 (ID inexistant)
-@patch("main.get_data_from_db")
+#@patch("main.get_data_from_db")
+@patch("src.load_csv.analyse_data")
 def test_predict_not_found(mock_get_data):
     import main
     main.trained_scaler = MagicMock()
