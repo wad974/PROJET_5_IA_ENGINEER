@@ -3,7 +3,10 @@ FROM python:3.13
 # 1. On crée l'utilisateur exigé par Hugging Face (UID 1000)
 RUN useradd -m -u 1000 user
 WORKDIR /app
+<<<<<<< HEAD
 USER 1000
+=======
+>>>>>>> 878f0d386210b4cea7392f6cc32b0e363177674a
 
 # 2. On change le propriétaire du dossier pour que l'utilisateur puisse écrire dedans
 RUN chown user:user /app
@@ -17,8 +20,11 @@ COPY --chown=user:user requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user:user . .
+<<<<<<< HEAD
 COPY --chown=1000:1000 params/config.ini /app/params/
 COPY --chown=1000:1000 ./bdd/dump-projet5-202606042043.sql /app/bdd/dump.sql
 COPY --chown=1000:1000 . .
+=======
+>>>>>>> 878f0d386210b4cea7392f6cc32b0e363177674a
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
