@@ -164,10 +164,9 @@ def predict_single_employee(id_employee: int):
     global trained_model, trained_scaler, x_train_scaled
     
 <<<<<<< HEAD
-    #train_model()
     
 =======
-    train_model()
+    #train_model()
 >>>>>>> 878f0d386210b4cea7392f6cc32b0e363177674a
     # 1. Vérification de la présence du modèle et du scaler
     if trained_model is None or trained_scaler is None:
