@@ -62,4 +62,4 @@ def split_data(df_central):
     score = model.score(X_test_scaler, y_test)
     print(f'Modèle entrainé avec succès. Score sur le test set : {score:.4f}')
     
-    return model, scaler, score, X_test_scaler
+    return model, scaler, score, X_train_scaler

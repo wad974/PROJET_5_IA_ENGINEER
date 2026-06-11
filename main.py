@@ -161,7 +161,7 @@ def train_model():
 
 @app.post("/predict", summary="Prédire si un employé spécifique va partir à partir de son ID")
 def predict_single_employee(id_employee: int ):
-    #global trained_model, trained_scaler, x_train_scaled
+    global trained_model, trained_scaler, x_train_scaled
     
     #train_model()
     # 1. Vérification de la présence du modèle et du scaler
@@ -172,6 +172,16 @@ def predict_single_employee(id_employee: int ):
         )
     
     try:
+        
+        # 2. Récupération des données de l'employé spécifique
+        employee_data = get_data_from_db(id_employee=id_employee)
+
+        # 3. Vérification de l'existence de l'employé
+        if employee_data.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"L'employé avec l'ID {id_employee} n'a pas été trouvé dans la base de données."
+            )
         
         # 8. Calcul de la prédiction
         prediction = int(trained_model.predict(x_train_scaled)[0])
