@@ -160,7 +160,7 @@ def train_model():
 
 
 @app.post("/predict", summary="Prédire si un employé spécifique va partir à partir de son ID")
-def predict_single_employee(id_employee: int, ):
+def predict_single_employee(id_employee: int ):
     #global trained_model, trained_scaler, x_train_scaled
     
     #train_model()
