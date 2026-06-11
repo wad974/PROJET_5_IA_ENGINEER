@@ -28,32 +28,53 @@ def analyse_data():
     print("\nDonnées Sondage :")
     print(df_sondage.head())
     
-    df_eval['id_employe'] = df_eval['eval_number'].str.extract(r'(\d+)').astype(int)
-    df_eval = df_eval.drop(columns=['eval_number'])
-    df_central = pd.merge(df_sirh, df_eval, on='id_employe', how='left')
-    df_central = pd.merge(df_central, df_sondage, left_on='id_employe', right_on='id_employe', how='left')
-    print("\nDonnées Centrales :")
-    print(df_central.head())
-    print(df_central.shape)
+    print("Etapes de préparation des données :")
+    print('extraction du numéro d\'employé depuis la colonne eval_number dans df_eval...')
+    df_eval['id_employee'] = df_eval['eval_number'].str.extract(r'(\d+)').astype(int)
     
+    print('suppression de la colonne eval_number dans df_eval...')
+    df_eval = df_eval.drop(columns=['eval_number'])
+    
+    print('fusion des données SIRH, Evaluation et Sondage pour créer une base de données centrale...')
+    df_central = pd.merge(df_sirh, df_eval, left_on='id_employee', right_on='id_employee', how='left')
+    
+    print('fusion des données Sondage avec la base centrale...')
+    df_central = pd.merge(df_central, df_sondage, left_on='id_employee', right_on='code_sondage', how='left')
+    print("\nDonnées Centrales :")
+    #print(df_central.head())
+    #print("Shape de la base de données centrale :", df_central.shape)
+    #print('df_central : ', df_central.info())
+    
+    print('transformation des variables catégorielles en variables numériques avec get_dummies...')
     # on transform les object en numerique pour les analyses statistiques
     for col, value in df_central.dtypes.items():
-        if value == 'object':
-            #print(col ,'-', value)
+        if value == 'object' or value == 'str':
+            print(col ,'-', value)
             df_central = pd.get_dummies(df_central, columns=[col], drop_first=True)
             
     # on controle de nouveau 
-    df_central.info()
+    print("\nDonnées Centrales après transformation :")
+    #df_central.info()
     # on converti les bool en int
-    # on utilise une boucle 
+    # on utilise une boucle
+    print('conversion des variables booléennes en entiers...')
     df_central = df_central.astype({col:int for col, value in df_central.dtypes.items() if value == 'bool'})
 
     # on fais un nettoyage des données NaN
+    print('nettoyage des données NaN...')
     df_central = df_central.dropna()   
     
     # on vois deux colonnes avec des data NaN on vas directement supprimer ces colonnes 
-    df_corr = df_central.drop(columns=['nombre_employee_sous_responsabilite', 'nombre_heures_travailless'], axis=1)
+    #print('df_central : ', df_central.columns)
+    #print('suppression des colonnes avec des données NaN...', df_central.columns[df_central.isna().any()])
+    #df_corr = df_central.drop(columns=['nombre_employee_sous_responsabilite', 'nombre_heures_travailless'], axis=1)
+    df_corr = df_central.drop(
+    columns=[
+        'nombre_employee_sous_responsabilite',
+        'nombre_heures_travailless'])
     
+    print('Données prêtes pour l\'entraînement du modèle :')
+    print(df_corr.head())   
     return df_corr
 
 # charger les données dans la base de données qui ont etait traiter dans la fonction def analyse_data() et qui sont dans le dataframe df_central

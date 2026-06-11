@@ -25,6 +25,7 @@ app = FastAPI(
 # ------------------------------------------------------------------
 trained_model = None
 trained_scaler = None
+x_train_scaled = None
 
 # Chemin vers le dossier de stockage des fichiers
 UPLOAD_FOLDER = "data"
@@ -130,16 +131,23 @@ async def upload_csv(file: UploadFile = File(...)):
 
 @app.post("/train-model", summary="Entraîne le modèle et stocke les artifacts")
 def train_model():
-    global trained_model, trained_scaler
+    global trained_model, trained_scaler, x_train_scaled
+    
     try:
-        from src import train_model as ml_pipeline
+        from src import train_model, load_csv, data_fetch
         
+        print('[INFO] Démarrage de l\'entraînement du modèle...')
         # Récupération des données consolidées et entraînement du pipeline
-        model, scaler, score = ml_pipeline.split_data(get_data_from_db())
+        model, scaler, score, x_train_scaled = train_model.split_data(load_csv.analyse_data())
         
+        print('Score F1 du modèle entraîné :', round(score, 4))
+        print('Model du modèle entraîné :', model)
+        print('Scaler du modèle entraîné :', scaler)
+        print('x_train_scaled :', x_train_scaled)
         # Stockage dans les variables globales pour les requêtes de prédiction ultérieures
         trained_model = model
         trained_scaler = scaler
+        x_train_scaled = x_train_scaled
         
         return {
             "status": "Success",
@@ -153,6 +161,9 @@ def train_model():
 
 @app.post("/predict", summary="Prédire si un employé spécifique va partir à partir de son ID")
 def predict_single_employee(id_employee: int):
+    global trained_model, trained_scaler, x_train_scaled
+    
+    train_model()
     # 1. Vérification de la présence du modèle et du scaler
     if trained_model is None or trained_scaler is None:
         raise HTTPException(
@@ -161,44 +172,9 @@ def predict_single_employee(id_employee: int):
         )
     
     try:
-        # 2. Récupération de l'ensemble des données consolidées de la DB
-        df_all = get_data_from_db()
-        
-        # 3. Extraction de la ligne correspondant à l'ID fourni
-        df_employee = df_all[df_all['id_employee'] == id_employee]
-        
-        if df_employee.empty:
-            raise HTTPException(
-                status_code=404, 
-                detail=f"L'employé avec l'ID {id_employee} n'a pas été trouvé dans la base de données."
-            )
-            
-        # 4. Validation structurelle via le modèle Pydantic EmployeeInput
-        employee_dict = df_employee.iloc[0].to_dict()
-        validated_employee = EmployeeInput(**employee_dict)
-        
-        # 5. Reconstruction d'un DataFrame propre
-        df_features = pd.DataFrame([validated_employee.model_dump()])
-        
-        # 6. Alignement strict de l'ordre des features (Exclusion de l'ID et de la Target)
-        X_features = df_features[[
-            'age', 'genre', 'revenu_mensuel', 'statut_marital', 'departement', 'poste', 
-            'nombre_experiences_precedentes', 'nombre_heures_travailless', 'annee_experience_totale', 
-            'annees_dans_l_entreprise', 'annees_dans_le_poste_actuel', 'nombre_participation_pee', 
-            'nb_formations_suivies', 'nombre_employee_sous_responsabilite', 'code_sondage', 
-            'distance_domicile_travail', 'niveau_education', 'domaine_etude', 'ayant_enfants', 
-            'frequence_deplacement', 'annees_depuis_la_derniere_promotion', 'annes_sous_responsable_actuel',
-            'satisfaction_employee_environnement', 'note_evaluation_precedente', 'niveau_hierarchique_poste', 
-            'satisfaction_employee_nature_travail', 'satisfaction_employee_equipe', 
-            'satisfaction_employee_equilibre_pro_perso', 'eval_number', 'note_evaluation_actuelle', 
-            'heure_supplementaires', 'augementation_salaire_precedente'
-        ]]
-        
-        # 7. Standardisation des données
-        X_scaled = trained_scaler.transform(X_features)
         
         # 8. Calcul de la prédiction
-        prediction = int(trained_model.predict(X_scaled)[0])
+        prediction = int(trained_model.predict(x_train_scaled)[0])
         
         return {
             "status": "Success",
